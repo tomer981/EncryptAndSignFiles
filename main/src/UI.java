@@ -91,6 +91,7 @@ public class UI {
         byte[] encryptedSign = cipherCBC.doFinal(byteSignature);
         CipherUtils.WritePlaintextToFile(encryptedSymmetricKey, CONFIG_FILE_PATH);
         CipherUtils.WritePlaintextToFile(encryptedSign, CONFIG_FILE_PATH);
+        CipherUtils.WritePlaintextToFile(digestedFile, CONFIG_FILE_PATH);
         System.out.println("Config File created (File Path: " + CONFIG_FILE_PATH + ")");
 
         // create encrypt file
