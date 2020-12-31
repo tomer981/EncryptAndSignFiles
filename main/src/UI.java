@@ -11,10 +11,10 @@ import static java.lang.System.exit;
 
 public class UI {
     private static final String EXECUTION_PATH = System.getProperty("user.dir");
-    private static final String PLAIN_TEXT_PATH = EXECUTION_PATH + "\\plaintext.txt";
-    private static final String ENCRYPTED_FILE_PATH = EXECUTION_PATH + "\\encrypted";
-    private static final String CONFIG_FILE_PATH = EXECUTION_PATH + "\\config";
-    private static final String DECRYPTED_FILE_PATH = EXECUTION_PATH + "\\decrypted.txt";
+    private static final String PLAIN_TEXT_PATH = EXECUTION_PATH + "/plaintext.txt";
+    private static final String ENCRYPTED_FILE_PATH = EXECUTION_PATH + "/encrypted";
+    private static final String CONFIG_FILE_PATH = EXECUTION_PATH + "/config";
+    private static final String DECRYPTED_FILE_PATH = EXECUTION_PATH + "/decrypted.txt";
     private static final String DIGEST_ALGORITHM_NAME = "SHA-256";
     private static final String CLIENT_KEY_STORE_PATH = EXECUTION_PATH + "\\keys\\client.keystore";
     private static final String SERVER_KEY_STORE_PATH = EXECUTION_PATH + "\\keys\\server.keystore";
@@ -124,31 +124,29 @@ public class UI {
 
         // get byteSignature from configFile
         byte[] encryptSignature = configStreamFile.readAllBytes();
-        byte[] byteSign = cipherCBC.doFinal(encryptSignature);
+        byte[] signaturesBytes = cipherCBC.doFinal(encryptSignature);
 
-        // digest
-        byte[] digest = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, ENCRYPTION_MESSAGE_DIGEST_PROVIDER);///////////// *********
-        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, Decryption_MESSAGE_DIGEST_PROVIDER);/////// *********
+        // check digest
+        byte[] digest = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
+        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, Decryption_MESSAGE_DIGEST_PROVIDER);
         if (!Arrays.equals(digest, digestedFile)) {
             System.out.println("Not the same data file");
             exit(0);
         }
 
-        // put after Signature in the end
+        // Signature
+        boolean isVerify = CipherUtils.verifySignature(SIGNATURE_ALGORITHM_NAME,Decryption_SIGN_PROVIDER,CLIENT_ALIAS,decryptedData,signaturesBytes,keyStore.GetTrustedPublicKey(CLIENT_ALIAS));
+        if (isVerify){
+            System.out.println("Decrypted file created: " + DECRYPTED_FILE_PATH);
+            System.out.println("Decrypted completed successfully");
+        }
+        else{
+            System.out.println("Signature is not valid " + DECRYPTED_FILE_PATH);
+        }
+
+        //
         Files.deleteIfExists(Paths.get(DECRYPTED_FILE_PATH));
         CipherUtils.WritePlaintextToFile(decryptedData, DECRYPTED_FILE_PATH);
-
-        // Signature
-//        CipherUtils.verifySignature(SIGNATURE_ALGORITHM_NAME,Decryption_SIGN_PROVIDER,CLIENT_ALIAS,decryptedData)
-        Signature verifySignature = Signature.getInstance(SIGNATURE_ALGORITHM_NAME,Decryption_SIGN_PROVIDER);
-        verifySignature.initVerify(keyStore.GetTrustedPublicKey(CLIENT_ALIAS));
-        verifySignature.update(decryptedData);
-        boolean isVerify = verifySignature.verify(byteSign);
-        System.out.println(isVerify);
-
-        System.out.println("Decrypted file created: " + DECRYPTED_FILE_PATH);
-
-        System.out.println("Decrypted completed successfully");
     }
 }
 // c:\download\tomer.txt

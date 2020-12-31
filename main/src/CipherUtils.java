@@ -16,6 +16,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+
 public class CipherUtils {
     private static final int ALGORITHM_PARAMS_BYTE_SIZE = 18;
     private static final int SYMMETRIC_KEY_BYTE_SIZE = 256;
@@ -64,7 +65,6 @@ public class CipherUtils {
     public static SecretKey GetSymmetricKey(String keyAlgorithmName, int keySize, String encryptionSecureRandomProvider, String encryptionKeyGeneratorProvider) throws NoSuchAlgorithmException, NoSuchProviderException {
         SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG",encryptionSecureRandomProvider);
         KeyGenerator keyGenerator = KeyGenerator.getInstance(keyAlgorithmName,encryptionKeyGeneratorProvider);
-        secureRandom.setSeed(711);// only for debugging
         keyGenerator.init(keySize, secureRandom);
         return keyGenerator.generateKey();
     }
@@ -126,4 +126,13 @@ public class CipherUtils {
 
         return algParams;
     }
+
+    public static boolean verifySignature(String signatureAlgorithmName, String decryption_sign_provider, String clientAlias, byte[] decryptedData, byte[] signaturesBytes, Key publicKey) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        Signature verifySignature = Signature.getInstance(signatureAlgorithmName,decryption_sign_provider);
+        verifySignature.initVerify((PublicKey) publicKey);
+        verifySignature.update(decryptedData);
+        return verifySignature.verify(signaturesBytes);
+
+    }
+
 }
