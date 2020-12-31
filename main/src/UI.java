@@ -16,8 +16,8 @@ public class UI {
     private static final String CONFIG_FILE_PATH = EXECUTION_PATH + "/config";
     private static final String DECRYPTED_FILE_PATH = EXECUTION_PATH + "/decrypted.txt";
     private static final String DIGEST_ALGORITHM_NAME = "SHA-256";
-    private static final String CLIENT_KEY_STORE_PATH = EXECUTION_PATH + "\\keys\\client.keystore";
-    private static final String SERVER_KEY_STORE_PATH = EXECUTION_PATH + "\\keys\\server.keystore";
+    private static final String CLIENT_KEY_STORE_PATH = EXECUTION_PATH + "/keys/client.keystore";
+    private static final String SERVER_KEY_STORE_PATH = EXECUTION_PATH + "/keys/server.keystore";
     private static final String SIGNATURE_ALGORITHM_NAME = "SHA256withRSA";
     private static final String SYMMETRIC_KEY_ALGORITHM_NAME = "AES";
     private static final String ASYMMETRIC_ALGORITHM_CIPHER_NAME = "RSA";
@@ -60,7 +60,7 @@ public class UI {
         MyKeyStore keyStore = CipherUtils.GetKeyStore(CLIENT_KEY_STORE_PATH, keyStorePassword, CLIENT_ALIAS);
 
         // messageDigest
-//        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, fileContent,ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
+       byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, fileContent,ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
 
         // Signature
         byte[] byteSignature = CipherUtils.Sign(SIGNATURE_ALGORITHM_NAME, keyStore.GetPrivateKey(), fileContent, ENCRYPTION_SIGN_PROVIDER);
@@ -79,13 +79,13 @@ public class UI {
         Files.deleteIfExists(Paths.get(ENCRYPTED_FILE_PATH));
         Files.deleteIfExists(Paths.get(CONFIG_FILE_PATH));
 
-        // create config file
-        CipherUtils.WritePlaintextToFile(cipherCBC.getParameters().getEncoded(), CONFIG_FILE_PATH);
-
-
         // encrypted symmetric key and signature
         byte[] encryptedSymmetricKey = cipherRSA.doFinal(symmetricKey.getEncoded());
         byte[] encryptedSign = cipherCBC.doFinal(byteSignature);
+
+        //create config file - move to function in ChiperUtils
+        CipherUtils.WritePlaintextToFile(cipherCBC.getParameters().getEncoded(), CONFIG_FILE_PATH);
+        CipherUtils.WritePlaintextToFile(digestedFile, CONFIG_FILE_PATH);
         CipherUtils.WritePlaintextToFile(encryptedSymmetricKey, CONFIG_FILE_PATH);
         CipherUtils.WritePlaintextToFile(encryptedSign, CONFIG_FILE_PATH);
         System.out.println("Config File created (File Path: " + CONFIG_FILE_PATH + ")");
@@ -124,12 +124,12 @@ public class UI {
 
         // get byteSignature from configFile
         byte[] encryptSignature = configStreamFile.readAllBytes();
-        byte[] signaturesBytes = cipherCBC.doFinal(encryptSignature);
+        byte[] byteSign = cipherCBC.doFinal(encryptSignature);
 
-        // check digest
-        byte[] digest = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
-        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, Decryption_MESSAGE_DIGEST_PROVIDER);
-        if (!Arrays.equals(digest, digestedFile)) {
+        // digest
+        // byte[] digest = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, ENCRYPTION_MESSAGE_DIGEST_PROVIDER);///////////// *********
+        byte[] digestedFromDecreaptedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, Decryption_MESSAGE_DIGEST_PROVIDER);/////// *********
+        if (!Arrays.equals(digestFromConfig, digestedFromDecreaptedFile)) {
             System.out.println("Not the same data file");
             exit(0);
         }

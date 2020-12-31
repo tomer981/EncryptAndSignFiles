@@ -34,6 +34,7 @@ public class MyKeyStore {
             throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException {
         KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(m_Password.toCharArray());
         KeyStore.PrivateKeyEntry pkEntry = (KeyStore.PrivateKeyEntry) m_KeyStore.getEntry(alias, protParam);
+        
         m_PrivateKey = pkEntry.getPrivateKey();
     }
 

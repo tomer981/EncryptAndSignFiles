@@ -16,17 +16,17 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-
 public class CipherUtils {
     private static final int ALGORITHM_PARAMS_BYTE_SIZE = 18;
     private static final int SYMMETRIC_KEY_BYTE_SIZE = 256;
+    private static final int DIGEST_BYTE_SIZE = 32;
 
     public static byte[] DigestMessage(String algorithmName, byte[] data, String encryptionMessageDigestProvider) throws NoSuchAlgorithmException, NoSuchProviderException {
         MessageDigest messageDigest = MessageDigest.getInstance(algorithmName, encryptionMessageDigestProvider);
         return messageDigest.digest(data);
     }
 
-    public static MyKeyStore GetKeyStore(String keyStorePath, String keyStorePassword, String alias) throws NoSuchAlgorithmException, CertificateException, KeyStoreException, UnrecoverableEntryException,IOException {
+    public static MyKeyStore GetKeyStore(String keyStorePath, String keyStorePassword, String alias) throws NoSuchAlgorithmException, CertificateException, KeyStoreException, UnrecoverableEntryException, IOException {
         FileInputStream inputStreamClientKeyFile = GetFileInputStream(keyStorePath);
         MyKeyStore keyStore = new MyKeyStore(inputStreamClientKeyFile, keyStorePassword, alias);
 
@@ -56,7 +56,7 @@ public class CipherUtils {
     }
 
     public static byte[] Sign(String algorithmName, PrivateKey privateKey, byte[] data, String encryptionSignProvider) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, NoSuchProviderException {
-        Signature signature = Signature.getInstance(algorithmName,encryptionSignProvider);// (SHA256withRSA taking from certificate)
+        Signature signature = Signature.getInstance(algorithmName, encryptionSignProvider);// (SHA256withRSA taking from certificate)
         signature.initSign(privateKey);
         signature.update(data);
         return signature.sign();
@@ -70,8 +70,8 @@ public class CipherUtils {
     }
 
     public static Cipher GetCipher(int mode, String AlgorithmName, Key key, AlgorithmParameters algorithmParameters, String cipherProvider) throws
-            InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException,InvalidAlgorithmParameterException, NoSuchProviderException {
-        Cipher cipher = Cipher.getInstance(AlgorithmName,cipherProvider);
+            InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, NoSuchProviderException {
+        Cipher cipher = Cipher.getInstance(AlgorithmName, cipherProvider);
         if (algorithmParameters == null) {
             cipher.init(mode, key);
         } else {
@@ -97,7 +97,7 @@ public class CipherUtils {
         cos.close();
     }
 
-    //decrypt file using CipherInputStream
+    // decrypt file using CipherInputStream
     public static byte[] DecryptFromFile(String filePath, Cipher cipher) throws IOException {
         FileInputStream encryptedStreamFile = GetFileInputStream(filePath);
 
@@ -117,11 +117,18 @@ public class CipherUtils {
         return new SecretKeySpec(encodedSymmetricKey, 0, encodedSymmetricKey.length, algorithmName);
     }
 
-    public static AlgorithmParameters GetAlgorithmParametersFromConfigFile(FileInputStream configStreamFile, String algorithmName, String decryption_PARAMETERS_PROVIDER) throws IOException, NoSuchAlgorithmException, NoSuchProviderException {
+    public static byte[] GetDigestFromConfigFile(FileInputStream configStreamFile)
+            throws IOException, BadPaddingException, IllegalBlockSizeException {
+        return configStreamFile.readNBytes(DIGEST_BYTE_SIZE);
+    }
+
+    public static AlgorithmParameters GetAlgorithmParametersFromConfigFile(FileInputStream configStreamFile,
+            String algorithmName, String decryption_PARAMETERS_PROVIDER)
+            throws IOException, NoSuchAlgorithmException, NoSuchProviderException {
         byte[] algoByte = new byte[ALGORITHM_PARAMS_BYTE_SIZE];
 
         configStreamFile.read(algoByte);
-        AlgorithmParameters algParams = AlgorithmParameters.getInstance(algorithmName,decryption_PARAMETERS_PROVIDER);
+        AlgorithmParameters algParams = AlgorithmParameters.getInstance(algorithmName, decryption_PARAMETERS_PROVIDER);
         algParams.init(algoByte);
 
         return algParams;
