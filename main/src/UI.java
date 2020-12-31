@@ -59,7 +59,7 @@ public class UI {
         byte[] fileContent = CipherUtils.ReadFile(PLAIN_TEXT_PATH);
 
         // get KeyStore
-        MyKeyStore keyStore = CipherUtils.GetKeyStore(CLIENT_KEY_STORE_PATH, keyStorePassword, "client");
+        MyKeyStore keyStore = CipherUtils.GetKeyStore(CLIENT_KEY_STORE_PATH, keyStorePassword, CLIENT_ALIAS);
 
         // messageDigest
         byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, fileContent,ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
