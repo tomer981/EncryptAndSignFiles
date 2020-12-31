@@ -27,8 +27,8 @@ public class UI {
 
 
     //KeyStore alias name
-    private static final String  CLIENT_ALIAS = "client";
-    private static final String  SERVER_ALIAS = "server";
+    private static final String CLIENT_ALIAS = "client";
+    private static final String SERVER_ALIAS = "server";
 
 
     //Encryption Providers
@@ -37,7 +37,6 @@ public class UI {
     private static final String ENCRYPTION_MESSAGE_DIGEST_PROVIDER = "SUN";
     private static final String ENCRYPTION_SIGN_PROVIDER = "SunRsaSign";
     private static final String ENCRYPTION_CIPHER_PROVIDER = "SunJCE";
-    private static final String ENCRYPTION_KEY_PROVIDER = "SunJCE";
     private static final String ENCRYPTION_RSA_PROVIDER = "SunJCE";
 
     //Decryption Providers
@@ -45,7 +44,6 @@ public class UI {
     private static final String Decryption_PARAMETERS_PROVIDER = "SunJCE";
     private static final String Decryption_SIGN_PROVIDER = "SunRsaSign";
     private static final String Decryption_CIPHER_PROVIDER = "SunJCE";
-    private static final String Decryption_KEY_PROVIDER = "SunJCE";
     private static final String Decryption_RSA_PROVIDER = "SunJCE";
 
     public void runEncryption(String keyStorePassword)
@@ -59,23 +57,23 @@ public class UI {
         byte[] fileContent = CipherUtils.ReadFile(PLAIN_TEXT_PATH);
 
         // get KeyStore
-        MyKeyStore keyStore = CipherUtils.GetKeyStore(CLIENT_KEY_STORE_PATH, keyStorePassword, "client");
+        MyKeyStore keyStore = CipherUtils.GetKeyStore(CLIENT_KEY_STORE_PATH, keyStorePassword, CLIENT_ALIAS);
 
         // messageDigest
-        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, fileContent,ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
+       byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, fileContent,ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
 
         // Signature
-        byte[] byteSignature = CipherUtils.Sign(SIGNATURE_ALGORITHM_NAME, keyStore.GetPrivateKey(), fileContent);
+        byte[] byteSignature = CipherUtils.Sign(SIGNATURE_ALGORITHM_NAME, keyStore.GetPrivateKey(), fileContent, ENCRYPTION_SIGN_PROVIDER);
 
         // generate symmetric key
-        SecretKey symmetricKey = CipherUtils.GetSymmetricKey(SYMMETRIC_KEY_ALGORITHM_NAME, SYMMETRIC_KEY_SIZE,ENCRYPTION_SECURE_RANDOM_PROVIDER,ENCRYPTION_KEY_GENERATOR_PROVIDER);
+        SecretKey symmetricKey = CipherUtils.GetSymmetricKey(SYMMETRIC_KEY_ALGORITHM_NAME, SYMMETRIC_KEY_SIZE, ENCRYPTION_SECURE_RANDOM_PROVIDER, ENCRYPTION_KEY_GENERATOR_PROVIDER);
 
 
         // encrypt plaintext + Signature
-        Cipher cipherCBC = CipherUtils.GetCipher(Cipher.ENCRYPT_MODE, SYMMETRIC_CIPHER_ALGORITHM_NAME, symmetricKey, null);
+        Cipher cipherCBC = CipherUtils.GetCipher(Cipher.ENCRYPT_MODE, SYMMETRIC_CIPHER_ALGORITHM_NAME, symmetricKey, null, ENCRYPTION_CIPHER_PROVIDER);
 
         // encrypt symmetric key
-        Cipher cipherRSA = CipherUtils.GetCipher(Cipher.ENCRYPT_MODE, ASYMMETRIC_ALGORITHM_CIPHER_NAME,keyStore.GetTrustedPublicKey(SERVER_ALIAS), null);
+        Cipher cipherRSA = CipherUtils.GetCipher(Cipher.ENCRYPT_MODE, ASYMMETRIC_ALGORITHM_CIPHER_NAME, keyStore.GetTrustedPublicKey(SERVER_ALIAS), null, ENCRYPTION_RSA_PROVIDER);
 
         // delete encrypt and config files
         Files.deleteIfExists(Paths.get(ENCRYPTED_FILE_PATH));
@@ -83,10 +81,9 @@ public class UI {
 
         // create config file
         CipherUtils.WritePlaintextToFile(cipherCBC.getParameters().getEncoded(), CONFIG_FILE_PATH);
-        // writePlaintextToFile("From:client".getBytes(), CONFIG_ENCODED_FILE_PATH);
-        // writePlaintextToFile("To:server".getBytes(), CONFIG_ENCODED_FILE_PATH);
 
-        // encreapted symmetric key and signature
+
+        // encrypted symmetric key and signature
         byte[] encryptedSymmetricKey = cipherRSA.doFinal(symmetricKey.getEncoded());
         byte[] encryptedSign = cipherCBC.doFinal(byteSignature);
         CipherUtils.WritePlaintextToFile(encryptedSymmetricKey, CONFIG_FILE_PATH);
@@ -101,10 +98,9 @@ public class UI {
         System.out.println("Encryption completed successfully");
     }
 
-    public void runDecryption(String keyStorePassword)
-            throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException,
-            UnrecoverableEntryException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, SignatureException, NoSuchProviderException {
+    public void runDecryption(String keyStorePassword) throws
+            IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableEntryException, NoSuchPaddingException,
+            InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, SignatureException, NoSuchProviderException {
 
         System.out.println("Start to decrypt file: " + ENCRYPTED_FILE_PATH);
 
@@ -112,34 +108,31 @@ public class UI {
         FileInputStream configStreamFile = CipherUtils.GetFileInputStream(CONFIG_FILE_PATH);
 
         // get keyStore
-        MyKeyStore keyStore = CipherUtils.GetKeyStore(SERVER_KEY_STORE_PATH, keyStorePassword, "server");
+        MyKeyStore keyStore = CipherUtils.GetKeyStore(SERVER_KEY_STORE_PATH, keyStorePassword, SERVER_ALIAS);
 
         // create asymmetricCipher object for decryption
-        Cipher cipherRSA = CipherUtils.GetCipher(Cipher.DECRYPT_MODE, ASYMMETRIC_ALGORITHM_CIPHER_NAME,
-                keyStore.GetPrivateKey(), null);
+        Cipher cipherRSA = CipherUtils.GetCipher(Cipher.DECRYPT_MODE, ASYMMETRIC_ALGORITHM_CIPHER_NAME, keyStore.GetPrivateKey(), null, Decryption_RSA_PROVIDER);
 
         // read algorithmParameter bytes and symmetric key from config file
-        AlgorithmParameters algParams = CipherUtils.GetAlgorithmParametersFromConfigFile(configStreamFile, SYMMETRIC_KEY_ALGORITHM_NAME);
+        AlgorithmParameters algParams = CipherUtils.GetAlgorithmParametersFromConfigFile(configStreamFile, SYMMETRIC_KEY_ALGORITHM_NAME,Decryption_PARAMETERS_PROVIDER);
         SecretKey symmetricKey = CipherUtils.GetSecretKeyFromConfigFile(configStreamFile, cipherRSA, SYMMETRIC_KEY_ALGORITHM_NAME);
 
         // create symmetricCipher object for decryption
-        Cipher cipherCBC = CipherUtils.GetCipher(Cipher.DECRYPT_MODE, SYMMETRIC_CIPHER_ALGORITHM_NAME, symmetricKey,
-                algParams);
+        Cipher cipherCBC = CipherUtils.GetCipher(Cipher.DECRYPT_MODE, SYMMETRIC_CIPHER_ALGORITHM_NAME, symmetricKey, algParams, Decryption_CIPHER_PROVIDER);
 
         // decrypt ciphertext data to plaintext
         byte[] decryptedData = CipherUtils.DecryptFromFile(ENCRYPTED_FILE_PATH, cipherCBC);
-        // String fileString = new String(decryptedData, CHAR_FORMAT_NAME);
 
         // get byteSignature from configFile
         byte[] encryptSignature = configStreamFile.readAllBytes();
         byte[] byteSign = cipherCBC.doFinal(encryptSignature);
 
         // digest
-        byte[] digest = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME,decryptedData, ENCRYPTION_MESSAGE_DIGEST_PROVIDER);
-        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, Decryption_MESSAGE_DIGEST_PROVIDER);
-        if (!Arrays.equals(digest,digestedFile)){
-            System.out.println("not the same data file");
-            exit(-1);
+        byte[] digest = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, ENCRYPTION_MESSAGE_DIGEST_PROVIDER);///////////// *********
+        byte[] digestedFile = CipherUtils.DigestMessage(DIGEST_ALGORITHM_NAME, decryptedData, Decryption_MESSAGE_DIGEST_PROVIDER);/////// *********
+        if (!Arrays.equals(digest, digestedFile)) {
+            System.out.println("Not the same data file");
+            exit(0);
         }
 
         // put after Signature in the end
@@ -147,7 +140,8 @@ public class UI {
         CipherUtils.WritePlaintextToFile(decryptedData, DECRYPTED_FILE_PATH);
 
         // Signature
-        Signature verifySignature = Signature.getInstance(SIGNATURE_ALGORITHM_NAME);
+//        CipherUtils.verifySignature(SIGNATURE_ALGORITHM_NAME,Decryption_SIGN_PROVIDER,CLIENT_ALIAS,decryptedData)
+        Signature verifySignature = Signature.getInstance(SIGNATURE_ALGORITHM_NAME,Decryption_SIGN_PROVIDER);
         verifySignature.initVerify(keyStore.GetTrustedPublicKey(CLIENT_ALIAS));
         verifySignature.update(decryptedData);
         boolean isVerify = verifySignature.verify(byteSign);
