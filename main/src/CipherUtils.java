@@ -134,7 +134,7 @@ public class CipherUtils {
         return algParams;
     }
 
-    public static boolean verifySignature(String signatureAlgorithmName, String decryption_sign_provider, String clientAlias, byte[] decryptedData, byte[] signaturesBytes, Key publicKey) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    public static boolean verifySignature(String signatureAlgorithmName, String decryption_sign_provider, byte[] decryptedData, byte[] signaturesBytes, Key publicKey) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         Signature verifySignature = Signature.getInstance(signatureAlgorithmName,decryption_sign_provider);
         verifySignature.initVerify((PublicKey) publicKey);
         verifySignature.update(decryptedData);
