@@ -54,13 +54,10 @@ public class CipherUtils {
         return fileContent;
     }
 
-    public static byte[] Sign(String algorithmName, PrivateKey privateKey, byte[] data)
-            throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
-        Signature signature = Signature.getInstance(algorithmName);// (SHA256withRSA taking from certificate)
-
+    public static byte[] Sign(String algorithmName, PrivateKey privateKey, byte[] data, String encryptionSignProvider) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, NoSuchProviderException {
+        Signature signature = Signature.getInstance(algorithmName,encryptionSignProvider);// (SHA256withRSA taking from certificate)
         signature.initSign(privateKey);
         signature.update(data);
-
         return signature.sign();
     }
 
@@ -72,10 +69,9 @@ public class CipherUtils {
         return keyGenerator.generateKey();
     }
 
-    public static Cipher GetCipher(int mode, String AlgorithmName, Key key, AlgorithmParameters algorithmParameters)
-            throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException,
-            InvalidAlgorithmParameterException {
-        Cipher cipher = Cipher.getInstance(AlgorithmName);
+    public static Cipher GetCipher(int mode, String AlgorithmName, Key key, AlgorithmParameters algorithmParameters, String cipherProvider) throws
+            InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException,InvalidAlgorithmParameterException, NoSuchProviderException {
+        Cipher cipher = Cipher.getInstance(AlgorithmName,cipherProvider);
         if (algorithmParameters == null) {
             cipher.init(mode, key);
         } else {
@@ -101,7 +97,7 @@ public class CipherUtils {
         cos.close();
     }
 
-    //decrepted file using CipherInputStream
+    //decrypt file using CipherInputStream
     public static byte[] DecryptFromFile(String filePath, Cipher cipher) throws IOException {
         FileInputStream encryptedStreamFile = GetFileInputStream(filePath);
 
@@ -121,12 +117,11 @@ public class CipherUtils {
         return new SecretKeySpec(encodedSymmetricKey, 0, encodedSymmetricKey.length, algorithmName);
     }
 
-    public static AlgorithmParameters GetAlgorithmParametersFromConfigFile(FileInputStream configStreamFile, String algorithmName)
-            throws IOException, NoSuchAlgorithmException {
+    public static AlgorithmParameters GetAlgorithmParametersFromConfigFile(FileInputStream configStreamFile, String algorithmName, String decryption_PARAMETERS_PROVIDER) throws IOException, NoSuchAlgorithmException, NoSuchProviderException {
         byte[] algoByte = new byte[ALGORITHM_PARAMS_BYTE_SIZE];
 
         configStreamFile.read(algoByte);
-        AlgorithmParameters algParams = AlgorithmParameters.getInstance(algorithmName);
+        AlgorithmParameters algParams = AlgorithmParameters.getInstance(algorithmName,decryption_PARAMETERS_PROVIDER);
         algParams.init(algoByte);
 
         return algParams;
